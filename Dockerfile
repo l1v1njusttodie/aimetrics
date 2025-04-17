@@ -5,11 +5,7 @@ FROM python:3.13-slim
 WORKDIR /api-flask
 
 # Copy the necessary files and directories into the container
-COPY resources/ static/ util/ app.py requirements.txt /api-flask/
-COPY resources/ /api-flask/resources/
-COPY static/ /api-flask/static/
-COPY util/ /api-flask/util/
-COPY app.py requirements.txt  /api-flask/
+COPY app.py requirements.txt /api-flask/
 
 # Upgrade pip and install Python dependencies
 RUN pip3 install --upgrade pip && pip install --no-cache-dir -r requirements.txt
