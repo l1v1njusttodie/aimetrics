@@ -45,11 +45,13 @@ def get_graph_data():
     smoothed_series = {}
     for window in range(3, 18, 2):
         smoothed = pd.Series(y_values).rolling(window=window, center=True).mean().tolist()
+        smoothed = [value if not pd.isna(value) else None for value in smoothed]
         smoothed_series[window] = smoothed
 
     plot_data = {
         'years': x_values,
         'series': smoothed_series
     }
+    app.logger.info(plot_data)
 
     return jsonify(plot_data), 200
