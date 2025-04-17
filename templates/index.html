@@ -1,0 +1,85 @@
+<!doctype html>
+<title>Загрузка Excel файла</title>
+<h1>Загрузите Excel файл с данными GDP</h1>
+<form method="post" enctype="multipart/form-data">
+  <input type="file" name="file">
+  <input type="submit" value="Загрузить">
+</form>
+
+{% if uploaded_filename %}
+  <p><strong>Загружен файл:</strong> {{ uploaded_filename }}</p>
+{% endif %}
+
+{% if countries %}
+  <h2>Выберите страну</h2>
+  <form method="post">
+    <select name="selected_country">
+      <option value="">Все страны</option>
+      {% for country in countries %}
+        <option value="{{ country }}" {% if country == selected_country %}selected{% endif %}>{{ country }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Показать</button>
+  </form>
+{% endif %}
+
+<p><a href="{{ url_for('plot') }}">Перейти к графикам скользящего среднего</a></p>
+
+<br>
+
+{% if data and selected_country %}
+  <h2>Данные по стране: {{ selected_country }}</h2>
+  <table border="1">
+    <thead>
+      <tr>
+        <th>Год</th>
+        <th>{{ selected_country }} (в млрд)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for year in years %}
+        <tr>
+          <td>{{ year }}</td>
+          <td>
+            {% if data.get((year, selected_country)) is not none %}
+              {{ '%.2f'|format(data.get((year, selected_country))) }}
+            {% else %}
+              N/A
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% elif data %}
+  <h2>Все данные</h2>
+  <table border="1">
+    <thead>
+      <tr>
+        <th>Год</th>
+        {% for country in countries %}
+          <th>{{ country }} (в млрд)</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for year in years %}
+        <tr>
+          <td>{{ year }}</td>
+          {% for country in countries %}
+            <td>
+              {% if data.get((year, country)) is not none %}
+                {{ '%.2f'|format(data.get((year, country))) }}
+              {% else %}
+                N/A
+              {% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+    {% if selected_country %}
+  <p><a href="{{ url_for('plot', country=selected_country) }}" target="_blank">Посмотреть график скользящего среднего</a></p>
+{% endif %}
+{% endif %}

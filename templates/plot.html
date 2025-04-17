@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+  <title>График скользящего среднего</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+<h1>График скользящего среднего по ВВП</h1>
+
+{% if countries %}
+  <form method="post">
+    <label for="selected_country">Выберите страну:</label>
+    <select name="selected_country" id="selected_country">
+      {% for country in countries %}
+        <option value="{{ country }}" {% if country == selected_country %}selected{% endif %}>{{ country }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Показать график</button>
+  </form>
+{% endif %}
+
+{% if plot_data %}
+  <h2>{{ selected_country }}</h2>
+  <div id="chart" style="height:600px;"></div>
+  <script>
+    const years = {{ plot_data['years']|tojson }};
+    const series = {{ plot_data['series']|tojson }};
+
+    const traces = Object.entries(series).map(([window, values]) => ({
+      x: years,
+      y: values,
+      mode: 'lines',
+      name: 'Σ=' + window
+    }));
+
+    const totalYears = years.length;
+    const frames = [];
+
+    for (let i = totalYears - 5; i >= 0; i--) {
+      frames.push({
+        name: `frame-${i}`,
+        layout: {
+          xaxis: {
+            range: [years[i], years[totalYears - 1]],
+            title: 'Год'
+          }
+        }
+      });
+    }
+
+    Plotly.newPlot('chart', traces, {
+      title: 'Скользящее среднее ВВП по стране: {{ selected_country }}',
+      xaxis: {
+        title: 'Год',
+        range: [years[totalYears - 5], years[totalYears - 1]]
+      },
+      yaxis: {
+        title: 'ВВП (в млрд)'
+      },
+      updatemenus: [{
+        type: 'buttons',
+        buttons: [{
+          label: '▶ Старт анимации',
+          method: 'animate',
+          args: [null, {
+            frame: { duration: 500, redraw: false },
+            fromcurrent: true,
+            transition: { duration: 300, easing: 'linear' }
+          }]
+        }]
+      }]
+    }).then(() => {
+      Plotly.addFrames('chart', frames);
+    });
+  </script>
+{% elif selected_country %}
+  <p>Нет данных для страны {{ selected_country }}</p>
+{% endif %}
+
+<p><a href="{{ url_for('index') }}">← Назад к загрузке файла</a></p>
+</body>
+</html>
