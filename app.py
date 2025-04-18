@@ -1,7 +1,7 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, jsonify
 import pandas as pd
 import os
-
+import polars as pl
 app = Flask(__name__)
 
 
@@ -30,18 +30,17 @@ def get_graph_data():
     if start is None or end is None or country is None or filename is None:
         return jsonify({'error': 'Missing required parameters'}), 400
 
-    raw_df = pd.read_excel(f'./files/{filename}', skiprows=skip_rows)
-    df = pd.DataFrame(raw_df[(raw_df.iloc[:, 0] >= int(start)) & (raw_df.iloc[:, 0] <= int(end))], columns=[year_column, country])
-    df = df.dropna()
-    app.logger.info(df.info)
-    df = df.rename(columns={country: 'value'})
-    df['year'] = df.iloc[:, 0].astype(int)
-    df = df[['year', 'value']].to_dict('records')
+    dl = pl.read_excel(f'./files/{filename}', read_options= {'header_row': skip_rows, 'use_columns': [year_column, country]})
 
-    y_values = [entry['value'] for entry in df]
-    x_values = [entry['year'] for entry in df]
+    start = int(start)
+    end = int(end)
+    dl = dl.filter((pl.col(year_column) >= start) & (pl.col(year_column) <= end))
+    dl = dl.drop_nans()
+    dl = dl.rename({country: 'value', year_column: 'year'})
 
-    # Сглаженные значения для разных окон
+    y_values = dl['value'].to_list()
+    x_values = dl['year'].to_list()
+
     smoothed_series = {}
     for window in range(3, 18, 2):
         smoothed = pd.Series(y_values).rolling(window=window, center=True).mean().tolist()
